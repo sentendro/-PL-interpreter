@@ -589,9 +589,9 @@ def Test_method(input):
     print print_node(result)
 
 def Test_All():
-    Test_method("( + 1 2 )")
-    Test_method("( - ( + 1 2 ) 4 )")
-    Test_method("( > 1 5 )")
-    Test_method("( cond ( ( null? ' ( 1 2 3 ) ) 1 ) ( ( > 100 10 ) 2 ) ( #T 3 ) )")
-
+    while True :
+        a = raw_input();
+        if a == 'exit':
+            break;
+        Test_method(a);
 Test_All()
