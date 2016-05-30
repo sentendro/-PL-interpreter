@@ -322,7 +322,11 @@ class CuteInterpreter(object):
     def define_binding(self,define_node):
 
         def insertTable(ID, value):
-            self.S_Table[ID] = value
+            if ID in self.S_Table:
+                del self.S_Table[ID]
+
+            else:
+                self.S_Table[ID] = value
 
         rhs1 = define_node.next
         rhs2 = rhs1.next if rhs1.next is not None else None
