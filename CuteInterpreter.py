@@ -317,6 +317,18 @@ class CuteInterpreter(object):
 
     TRUE_NODE = Node(TokenType.TRUE)
     FALSE_NODE = Node(TokenType.FALSE)
+    S_Table = {}
+
+    def define_binding(self,define_node):
+
+        def insertTable(ID, value):
+            self.S_Table[ID] = value
+
+        rhs1 = define_node.next
+        rhs2 = rhs1.next if rhs1.next is not None else None
+        rhs2 = self.run_expr(rhs2)
+
+        return insertTable(rhs1.value,rhs2)
 
     def run_arith(self, arith_node):
         rhs1 = arith_node.next
@@ -463,6 +475,9 @@ class CuteInterpreter(object):
         else:
             return None
 
+    def lookUpTable(self, ID):
+        return self.S_Table[ID.value]
+
     def run_expr(self, root_node):
         """
         :type root_node: Node
@@ -471,7 +486,7 @@ class CuteInterpreter(object):
             return None
 
         if root_node.type is TokenType.ID:
-            return root_node
+            return self.run_expr(self.lookUpTable(root_node))
         elif root_node.type is TokenType.INT:
             return root_node
         elif root_node.type is TokenType.TRUE:
@@ -501,6 +516,9 @@ class CuteInterpreter(object):
 
         if op_code.type in [TokenType.GT, TokenType.LT, TokenType.EQ]:
             return self.run_relate(op_code)
+
+        if op_code.type in [TokenType.DEFINE]:
+            return self.define_binding(op_code)
 
         if op_code.type is TokenType.QUOTE:
             return l_node
@@ -586,11 +604,11 @@ def Test_method(input):
     node = test_basic_paser.parse_expr()
     cute_inter = CuteInterpreter()
     result = cute_inter.run_expr(node)
-    print print_node(result)
+    print "...\t" + str(print_node(result))
 
 def Test_All():
     while True :
-        a = raw_input();
+        a = raw_input("$");
         if a == 'exit':
             break;
         Test_method(a);
