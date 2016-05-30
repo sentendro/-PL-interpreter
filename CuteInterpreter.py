@@ -243,6 +243,8 @@ class Node (object):
                 result = "("+str(self.value)+")"
         elif self.type is TokenType.QUOTE:
             result = "'"
+        elif self.type is TokenType.DEFINE:
+            result = "Define"
         else:
             result = "["+NODETYPE_NAMES[self.type]+"]"
 
@@ -324,15 +326,19 @@ class CuteInterpreter(object):
         def insertTable(ID, value):
             if ID in self.S_Table:
                 del self.S_Table[ID]
-
+                return True
             else:
                 self.S_Table[ID] = value
+                return False
 
         rhs1 = define_node.next
         rhs2 = rhs1.next if rhs1.next is not None else None
         rhs2 = self.run_expr(rhs2)
 
-        return insertTable(rhs1.value,rhs2)
+        if not insertTable(rhs1.value,rhs2) :
+            return Node(TokenType.DEFINE,rhs1)
+        else :
+            return Node(TokenType.ID,"Delete [" + rhs1.value + "] ")
 
     def run_arith(self, arith_node):
         rhs1 = arith_node.next
@@ -435,7 +441,6 @@ class CuteInterpreter(object):
             if expr_rhs1.type is TokenType.LIST:
                 result1_node = Node(TokenType.LIST, pop_node_from_quote_list(expr_rhs1))
             else:
-                result1 = expr_rhs1.value
                 result1_node = Node(expr_rhs1.type, expr_rhs1.value)
             if expr_rhs2 is not None:
                 result2 = pop_node_from_quote_list(expr_rhs2)
@@ -604,6 +609,8 @@ def print_node(node):
         return "not"
     if node.type is TokenType.QUOTE:
         return "'"+print_node(node.next)
+    if node.type is TokenType.DEFINE:
+        return "Define " + str(node.value)# + " = " + print_node(node.next.next.value)
 
 def Test_method(input):
     test_cute = CuteScanner(input)
