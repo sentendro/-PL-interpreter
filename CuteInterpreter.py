@@ -426,14 +426,18 @@ class CuteInterpreter(object):
         elif func_node.type is TokenType.CONS:
             expr_rhs1 = self.run_expr(rhs1)
             expr_rhs2 = self.run_expr(rhs2)
-            #작성
-            #rhs2는 무조건 list라고 가정
-            expr_rhs1.value = expr_rhs1.value.next
-            expr_rhs1.value.next = expr_rhs2.value.next.value
-            result  = create_quote_node(expr_rhs1)
-            if result.type is TokenType.LIST:
-                return result
-            return create_quote_node(result,True)
+            # 작성
+            # rhs2는 무조건 list라고 가정
+            if expr_rhs1.type is TokenType.LIST:
+                result1_node = Node(TokenType.LIST, pop_node_from_quote_list(expr_rhs1))
+            else:
+                result1 = expr_rhs1.value
+                result1_node = Node(expr_rhs1.type, expr_rhs1.value)
+            if expr_rhs2 is not None:
+                result2 = pop_node_from_quote_list(expr_rhs2)
+                result1_node.next = result2
+            result_list = create_quote_node(result1_node, True)
+            return result_list
 
 
         elif func_node.type is TokenType.ATOM_Q:
