@@ -321,6 +321,33 @@ class CuteInterpreter(object):
     FALSE_NODE = Node(TokenType.FALSE)
     S_Table = {}
 
+    def lambda2(self, lambda_node):
+
+        rhs1 = lambda_node.next
+        temp = self.S_Table[lambda_node.value].value
+        param = temp.next
+        temp_param = temp.next.value
+        temp_rhs1 = rhs1.value
+        expr = temp.next.next
+        if expr.next is not None:
+            self.define_binding(expr.value)
+            expr = expr.next
+        while temp_param is not None:
+            if temp_rhs1.value in self.S_Table:
+                pass
+            else:
+                self.S_Table[temp_param.value] = temp_rhs1
+            temp_param = temp_param.next
+            temp_rhs1 = temp_rhs1.next
+
+        value = self.run_expr(expr)
+        temp_param = temp.next.value
+        while temp_param.next is not None:
+            del self.S_Table[temp_param.value]
+            temp_param = temp_param.next
+        value = self.run_expr(value)
+        return value
+
     def define_binding(self,define_node):
 
         def insertTable(ID, value):
@@ -333,7 +360,9 @@ class CuteInterpreter(object):
 
         rhs1 = define_node.next
         rhs2 = rhs1.next if rhs1.next is not None else None
-        rhs2 = self.run_expr(rhs2)
+        if rhs2.type is TokenType.LIST:
+            if rhs2.value.type is not TokenType.LAMBDA:
+                rhs2 = self.run_expr(rhs2)
 
         if not insertTable(rhs1.value,rhs2) :
             return Node(TokenType.DEFINE,rhs1)
@@ -535,6 +564,13 @@ class CuteInterpreter(object):
 
         if op_code.type is TokenType.QUOTE:
             return l_node
+
+        if op_code.type is TokenType.ID:
+            if op_code.value in self.S_Table and op_code.next is not None:
+                return self.lambda2(op_code)
+            else:
+                return self.S_Table[op_code.value]
+
         else:
             print "application: not a procedure;"
             print "expected a procedure that can be applied to arguments"
