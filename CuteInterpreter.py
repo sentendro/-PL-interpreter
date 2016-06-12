@@ -323,12 +323,7 @@ class CuteInterpreter(object):
     S_Table = {}
 
     def insert_S_Table(self,ID, value):
-        if ID in self.S_Table:
-            del self.S_Table[ID]
-            return True
-        else:
-            self.S_Table[ID] = value
-            return False
+        self.S_Table[ID] = value
 
 #( define lastitem ( lambda ( ls ) ( cond ( ( null? ( cdr ( ls ) ) ) ( car ( ls ) ) ) ( #T ( lastitem ( ( cdr ( ls ) ) ) ) ) ) ) )
 #( define plus1 ( lambda ( x ) ( + x 1 ) ) )
@@ -336,6 +331,9 @@ class CuteInterpreter(object):
 #( define plus2 ( lambda ( x ) ( + ( plus1 ( x ) ) 1 ) ) )
 #( define mplus ( lambda ( a b ) ( + a b ) ) )
 #( lambda ( x ) ( + x 1 ) ( 2 ) )
+#( define n 100 )
+#( define plusn ( lambda ( x ) ( + x n ) ) )
+#( define othern ( lambda ( x nn ) ( define n nn ) ( plusn ( x ) ) ) )
     def anonymous_Lambda(self, lambda_node, parent_Table = {}):
         rhs1 = lambda_node.next
         while rhs1.next is not None:
@@ -401,11 +399,8 @@ class CuteInterpreter(object):
         if rhs2.type is TokenType.LIST:
             if rhs2.value.type is not TokenType.LAMBDA:
                 rhs2 = self.run_expr(rhs2)
-
-        if not self.insert_S_Table(rhs1.value,rhs2) :
-            return Node(TokenType.DEFINE,rhs1)
-        else :
-            return Node(TokenType.ID,"Delete [" + rhs1.value + "] ")
+        self.insert_S_Table(rhs1.value,rhs2)
+        return Node(TokenType.DEFINE,rhs1)
 
     def run_arith(self, arith_node):
         rhs1 = arith_node.next
