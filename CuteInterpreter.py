@@ -344,8 +344,40 @@ class CuteInterpreter(object):
 #( define cube ( lambda ( n ) ( define sqrt ( lambda ( n ) ( * n n ) ) ) ( * ( sqrt ( n ) ) n ) ) )
 #( define plus2 ( lambda ( x ) ( + ( plus1 ( x ) ) 1 ) ) )
 #( define mplus ( lambda ( a b ) ( + a b ) ) )
+#( lambda ( x ) ( + x 1 ) ( 2 ) )
+    def anonymous_Lambda(self, lambda_node, parent_Table = {}):
+        rhs1 = lambda_node.next
+        while rhs1.next is not None:
+            rhs1 = rhs1.next
+        expr = lambda_node.next.next
+        temp_param = lambda_node.next.value
+        temp_rhs1 = rhs1.value
+        current_value = self.run_expr(temp_rhs1)
+        if expr.next.next is not None:
+            self.define_binding(expr.value)
+            expr = expr.next
+        expr.next = None
+        while temp_param is not None:
+            if temp_param.value in parent_Table:
+                self.temp_Table[temp_param.value] = current_value
+            elif temp_param.value in self.S_Table:
+                pass
+            else :
+                self.insert_temp_Table(temp_param.value, current_value)
+            temp_param = temp_param.next
+            temp_rhs1 = temp_rhs1.next if temp_rhs1.next is not None else None
+            current_value = self.run_expr(temp_rhs1)
+        value = self.run_expr(expr)
+        value = self.run_expr(value)
+        target_keys = self.temp_Table.keys()
+        for temp_key in target_keys:
+            if not (temp_key in parent_Table):
+                del self.temp_Table[temp_key]
+            elif temp_key in parent_Table:
+                self.temp_Table[temp_key] = parent_Table[temp_key]
+        return value
 
-    def Lambda(self, lambda_node, parent_Table = {}):
+    def function_Lambda(self, lambda_node, parent_Table = {}):
         rhs1 = lambda_node.next
         temp = self.S_Table[lambda_node.value].value
         temp_param = temp.next.value
@@ -592,9 +624,11 @@ class CuteInterpreter(object):
             return l_node
         if op_code.type is TokenType.INT:
             return l_node
+        if op_code.type is TokenType.LAMBDA:
+            return self.anonymous_Lambda(op_code, copy.deepcopy(self.temp_Table))
         if op_code.type is TokenType.ID:
             if op_code.value in self.S_Table and op_code.next is not None:
-                return self.Lambda(op_code, copy.deepcopy(self.temp_Table))
+                return self.function_Lambda(op_code, copy.deepcopy(self.temp_Table))
             else:
                 return self.lookUpTable(op_code.value)
 
