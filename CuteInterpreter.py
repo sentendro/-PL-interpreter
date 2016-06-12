@@ -321,7 +321,6 @@ class CuteInterpreter(object):
     TRUE_NODE = Node(TokenType.TRUE)
     FALSE_NODE = Node(TokenType.FALSE)
     S_Table = {}
-    temp_Table = {}
 
     def insert_S_Table(self,ID, value):
         if ID in self.S_Table:
@@ -329,14 +328,6 @@ class CuteInterpreter(object):
             return True
         else:
             self.S_Table[ID] = value
-            return False
-
-    def insert_temp_Table(self,ID, value):
-        if ID in self.temp_Table:
-            del self.temp_Table[ID]
-            return True
-        else:
-            self.temp_Table[ID] = value
             return False
 
 #( define lastitem ( lambda ( ls ) ( cond ( ( null? ( cdr ( ls ) ) ) ( car ( ls ) ) ) ( #T ( lastitem ( ( cdr ( ls ) ) ) ) ) ) ) )
@@ -359,22 +350,20 @@ class CuteInterpreter(object):
         expr.next = None
         while temp_param is not None:
             if temp_param.value in parent_Table:
-                self.temp_Table[temp_param.value] = current_value
-            elif temp_param.value in self.S_Table:
-                pass
+                self.S_Table[temp_param.value] = current_value
             else :
-                self.insert_temp_Table(temp_param.value, current_value)
+                self.insert_S_Table(temp_param.value, current_value)
             temp_param = temp_param.next
             temp_rhs1 = temp_rhs1.next if temp_rhs1.next is not None else None
             current_value = self.run_expr(temp_rhs1)
         value = self.run_expr(expr)
         value = self.run_expr(value)
-        target_keys = self.temp_Table.keys()
+        target_keys = self.S_Table.keys()
         for temp_key in target_keys:
             if not (temp_key in parent_Table):
-                del self.temp_Table[temp_key]
+                del self.S_Table[temp_key]
             elif temp_key in parent_Table:
-                self.temp_Table[temp_key] = parent_Table[temp_key]
+                self.S_Table[temp_key] = parent_Table[temp_key]
         return value
 
     def function_Lambda(self, lambda_node, parent_Table = {}):
@@ -389,22 +378,20 @@ class CuteInterpreter(object):
             expr = expr.next
         while temp_param is not None:
             if temp_param.value in parent_Table:
-                self.temp_Table[temp_param.value] = current_value
-            elif temp_param.value in self.S_Table:
-                pass
+                self.S_Table[temp_param.value] = current_value
             else :
-                self.insert_temp_Table(temp_param.value, current_value)
+                self.insert_S_Table(temp_param.value, current_value)
             temp_param = temp_param.next
             temp_rhs1 = temp_rhs1.next if temp_rhs1.next is not None else None
             current_value = self.run_expr(temp_rhs1)
         value = self.run_expr(expr)
         value = self.run_expr(value)
-        target_keys = self.temp_Table.keys()
+        target_keys = self.S_Table.keys()
         for temp_key in target_keys:
             if not (temp_key in parent_Table):
-                del self.temp_Table[temp_key]
+                del self.S_Table[temp_key]
             elif temp_key in parent_Table:
-                self.temp_Table[temp_key] = parent_Table[temp_key]
+                self.S_Table[temp_key] = parent_Table[temp_key]
 
         return value
 
@@ -569,10 +556,7 @@ class CuteInterpreter(object):
             return None
 
     def lookUpTable(self, ID):
-        if ID in self.temp_Table:
-            return self.temp_Table[ID]
-        elif ID in self.S_Table:
-            return self.S_Table[ID]
+        return self.S_Table[ID]
 
     def run_expr(self, root_node):
         """
@@ -582,7 +566,7 @@ class CuteInterpreter(object):
             return None
 
         if root_node.type is TokenType.ID:
-            if root_node.value in self.S_Table or root_node.value in self.temp_Table:
+            if root_node.value in self.S_Table:
                 return self.run_expr(self.lookUpTable(root_node.value))
             return root_node
         elif root_node.type is TokenType.INT:
@@ -625,12 +609,14 @@ class CuteInterpreter(object):
         if op_code.type is TokenType.INT:
             return l_node
         if op_code.type is TokenType.LAMBDA:
-            return self.anonymous_Lambda(op_code, copy.deepcopy(self.temp_Table))
+            return self.anonymous_Lambda(op_code, copy.deepcopy(self.S_Table))
         if op_code.type is TokenType.ID:
             if op_code.value in self.S_Table and op_code.next is not None:
-                return self.function_Lambda(op_code, copy.deepcopy(self.temp_Table))
-            else:
+                return self.function_Lambda(op_code, copy.deepcopy(self.S_Table))
+            elif op_code.value in self.S_Table:
                 return self.lookUpTable(op_code.value)
+            else:
+                return l_node
 
         else:
             print "application: not a procedure;"
